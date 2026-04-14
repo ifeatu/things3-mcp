@@ -20,59 +20,68 @@ use scripting additions
 
 tell application id "com.culturedcode.ThingsMac"\n`;
   
-  // Determine which list to query
-  let listName = 'to dos';
+  // Build the AppleScript "every to do [of list X]" reference used for both
+  // counting and batch property fetching.
+  // NOTE: batch fetch MUST use the "every to do [of list X]" syntax sent
+  // directly to Things3 (e.g. "id of every to do").  Addressing a local list
+  // variable ("id of todoList") returns object specifiers, not plain values,
+  // and causes a type error inside Foundation dictionaries.
+  let everyTodo = 'every to do';
   if (filter) {
     switch (filter) {
-      case 'inbox':
-        listName = 'to dos of list "Inbox"';
-        break;
-      case 'today':
-        listName = 'to dos of list "Today"';
-        break;
-      case 'upcoming':
-        listName = 'to dos of list "Upcoming"';
-        break;
-      case 'anytime':
-        listName = 'to dos of list "Anytime"';
-        break;
-      case 'someday':
-        listName = 'to dos of list "Someday"';
-        break;
-      case 'logbook':
-        listName = 'to dos of list "Logbook"';
-        break;
+      case 'inbox':    everyTodo = 'every to do of list "Inbox"';    break;
+      case 'today':    everyTodo = 'every to do of list "Today"';    break;
+      case 'upcoming': everyTodo = 'every to do of list "Upcoming"'; break;
+      case 'anytime':  everyTodo = 'every to do of list "Anytime"';  break;
+      case 'someday':  everyTodo = 'every to do of list "Someday"';  break;
+      case 'logbook':  everyTodo = 'every to do of list "Logbook"';  break;
     }
   }
-  
-  script += `  set todoList to ${listName}\n`;
+
+  // Batch-fetch all properties up front with one IPC call per property.
+  // Accessing per-item properties inside a repeat loop (e.g. "id of t") makes
+  // one IPC round-trip to Things3 per item — 600 todos × 3 properties = 1,800
+  // round-trips, which takes 30+ seconds.  "id of every to do" fetches all IDs
+  // in a single round-trip regardless of list size (~3 calls total = ~1 second).
+  script += `  set todoCount to count (${everyTodo})\n`;
+  script += '  if todoCount is 0 then return "[]"\n';
+  script += '  -- Batch-fetch all properties in one IPC call each\n';
+  script += `  set allIds to id of (${everyTodo})\n`;
+  script += `  set allNames to name of (${everyTodo})\n`;
+  script += `  set allStatuses to status of (${everyTodo})\n`;
+
+  // Need notes only when filtering by search text
+  if (searchText) {
+    script += `  set allNotes to notes of (${everyTodo})\n`;
+  }
+
   script += '  set resultArray to current application\'s NSMutableArray\'s array()\n';
-  script += '  repeat with t in todoList\n';
-  
-  // Apply status filter
+  script += '  repeat with i from 1 to todoCount\n';
+
+  // Apply status filter using pre-fetched array
   if (status) {
     if (status === 'open') {
-      script += '    if status of t is open then\n';
+      script += '    if item i of allStatuses is open then\n';
     } else if (status === 'completed') {
-      script += '    if status of t is completed then\n';
+      script += '    if item i of allStatuses is completed then\n';
     } else if (status === 'cancelled') {
-      script += '    if status of t is canceled then\n';
+      script += '    if item i of allStatuses is canceled then\n';
     }
   }
-  
-  // Apply search text filter
+
+  // Apply search text filter using pre-fetched arrays
   if (searchText) {
     const escaped = bridge.escapeString(searchText);
-    script += `    if (name of t contains "${escaped}" or notes of t contains "${escaped}") then\n`;
+    script += `    if (item i of allNames contains "${escaped}" or item i of allNotes contains "${escaped}") then\n`;
   }
-  
+
   // Build result using NSMutableDictionary for proper JSON serialization
   script += '      set todoDict to current application\'s NSMutableDictionary\'s dictionary()\n';
-  script += '      todoDict\'s setObject:(id of t) forKey:"id"\n';
-  script += '      todoDict\'s setObject:(name of t) forKey:"title"\n';
-  script += '      todoDict\'s setObject:(status of t is completed) forKey:"completed"\n';
+  script += '      todoDict\'s setObject:(item i of allIds) forKey:"id"\n';
+  script += '      todoDict\'s setObject:(item i of allNames) forKey:"title"\n';
+  script += '      todoDict\'s setObject:(item i of allStatuses is completed) forKey:"completed"\n';
   script += '      resultArray\'s addObject:todoDict\n';
-  
+
   // Close conditionals
   if (searchText) {
     script += '    end if\n';
@@ -80,7 +89,7 @@ tell application id "com.culturedcode.ThingsMac"\n`;
   if (status) {
     script += '    end if\n';
   }
-  
+
   script += '  end repeat\n';
   script += '  \n';
   script += '  -- Convert to JSON\n';
@@ -1036,42 +1045,53 @@ use framework "Foundation"
 use scripting additions
 
 tell application id "com.culturedcode.ThingsMac"\n`;
-  script += '  set logbookItems to to dos of list "Logbook"\n';
+  const maxResults = limit || 100;
+
+  // Batch-fetch all properties in one IPC call each — avoids O(N) round-trips.
+  script += '  set itemCount to count (every to do of list "Logbook")\n';
+  script += '  if itemCount is 0 then return "[]"\n';
+  script += '  set allIds to id of every to do of list "Logbook"\n';
+  script += '  set allNames to name of every to do of list "Logbook"\n';
+  if (searchText) {
+    script += '  set allNotes to notes of every to do of list "Logbook"\n';
+  }
+  if (fromDate || toDate) {
+    script += '  set allDates to completion date of every to do of list "Logbook"\n';
+  }
+
   script += '  set resultArray to current application\'s NSMutableArray\'s array()\n';
   script += '  set resultCount to 0\n';
-  const maxResults = limit || 100;
-  
-  script += '  repeat with t in logbookItems\n';
+  script += '  repeat with i from 1 to itemCount\n';
   script += `    if resultCount < ${maxResults} then\n`;
   script += '      set shouldInclude to true\n';
-  
-  // Apply search text filter
+
+  // Apply search text filter using pre-fetched arrays
   if (searchText) {
     const escaped = bridge.escapeString(searchText);
-    script += `      if not (name of t contains "${escaped}" or notes of t contains "${escaped}") then\n`;
+    script += `      if not (item i of allNames contains "${escaped}" or item i of allNotes contains "${escaped}") then\n`;
     script += '        set shouldInclude to false\n';
     script += '      end if\n';
   }
-  
-  // Apply date range filter (simplified - no date comparisons for now)
+
+  // Apply date range filter using pre-fetched array
   if (fromDate || toDate) {
-    script += '      set completionDate to completion date of t\n';
+    script += '      set completionDate to item i of allDates\n';
     script += '      if completionDate is missing value then\n';
     script += '        set shouldInclude to false\n';
     script += '      end if\n';
   }
-  
+
   script += '      if shouldInclude then\n';
-  
+
   // Build result using NSMutableDictionary
   script += '        set todoDict to current application\'s NSMutableDictionary\'s dictionary()\n';
-  script += '        todoDict\'s setObject:(id of t) forKey:"id"\n';
-  script += '        todoDict\'s setObject:(name of t) forKey:"title"\n';
+  script += '        todoDict\'s setObject:(item i of allIds) forKey:"id"\n';
+  script += '        todoDict\'s setObject:(item i of allNames) forKey:"title"\n';
   script += '        todoDict\'s setObject:true forKey:"completed"\n';
   script += '        resultArray\'s addObject:todoDict\n';
   script += '        set resultCount to resultCount + 1\n';
   script += '      end if\n';
-  
+
   script += '    end if\n';
   script += '  end repeat\n';
   script += '  \n';

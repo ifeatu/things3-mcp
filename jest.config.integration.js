@@ -17,8 +17,11 @@ export default {
   transformIgnorePatterns: [
     'node_modules/(?!(@modelcontextprotocol)/)'
   ],
-  // Longer timeout for AppleScript operations
-  testTimeout: 30000,
+  // Longer timeout for AppleScript operations (Things3 can be slow, especially
+  // for bulk/project/tag writes; 120 s matches the AppleScriptBridge limit).
+  testTimeout: 120000,
+  // Prevent the process from hanging after all tests complete
+  forceExit: true,
   // Run tests serially to avoid conflicts with Things3
   maxWorkers: 1,
   // Verbose output for integration tests

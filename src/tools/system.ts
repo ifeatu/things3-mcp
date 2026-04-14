@@ -15,9 +15,9 @@ export class SystemTools extends BaseTool {
    */
   async launch(): Promise<{ status: string; version?: string }> {
     try {
-      // Ensure Things3 is running
-      const launchScript = templates.ensureThings3Running();
-      await this.bridge.execute(launchScript);
+      // Use bridge.ensureThings3Running() so we get the full bundle-ID +
+      // `open -b` shell fallback chain (post-reboot safe).
+      await this.bridge.ensureThings3Running();
 
       // Get version info
       const versionScript = templates.getThings3Version();

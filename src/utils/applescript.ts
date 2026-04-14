@@ -133,17 +133,17 @@ export class AppleScriptBridge {
   }
 
   /**
-   * Check if Things3 is running
+   * Check if Things3 is running.
+   * Uses pgrep instead of System Events to avoid the multi-second
+   * latency (and occasional hangs) that System Events introduces.
    * @returns True if Things3 is running
    */
   async isThings3Running(): Promise<boolean> {
-    try {
-      const script = 'tell application "System Events" to (name of processes) contains "Things3"';
-      const result = await this.execute(script);
-      return result === 'true';
-    } catch {
-      return false;
-    }
+    return new Promise((resolve) => {
+      const pgrep = spawn('pgrep', ['-x', 'Things3']);
+      pgrep.on('close', (code) => resolve(code === 0));
+      pgrep.on('error', () => resolve(false));
+    });
   }
 
   /**
