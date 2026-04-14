@@ -18,7 +18,7 @@ export function listTodos(
 use framework "Foundation"
 use scripting additions
 
-tell application "Things3"\n`;
+tell application id "com.culturedcode.ThingsMac"\n`;
   
   // Determine which list to query
   let listName = 'to dos';
@@ -107,7 +107,7 @@ use AppleScript version "2.4"
 use framework "Foundation"
 use scripting additions
 
-tell application "Things3"
+tell application id "com.culturedcode.ThingsMac"
   try
     set t to to do id "${escapedId}"
     
@@ -178,7 +178,7 @@ export function createTodo(
   const escapedTitle = bridge.escapeString(title);
   const escapedNotes = notes ? bridge.escapeString(notes) : '';
   
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   
   // Create the basic todo
   script += `  set newTodo to make new to do with properties {name:"${escapedTitle}"`;
@@ -234,7 +234,7 @@ export function updateTodo(
 ): string {
   const escapedId = bridge.escapeString(id);
   
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += `  set t to to do id "${escapedId}"\n`;
   
   // Update basic properties
@@ -299,7 +299,7 @@ export function updateTodo(
  * Generate AppleScript to complete TODOs
  */
 export function completeTodos(ids: string[]): string {
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += '  set completedCount to 0\n';
   
   for (const id of ids) {
@@ -323,7 +323,7 @@ export function completeTodos(ids: string[]): string {
  * Generate AppleScript to uncomplete TODOs
  */
 export function uncompleteTodos(ids: string[]): string {
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += '  set uncompletedCount to 0\n';
   
   for (const id of ids) {
@@ -347,7 +347,7 @@ export function uncompleteTodos(ids: string[]): string {
  * Generate AppleScript to delete TODOs
  */
 export function deleteTodos(ids: string[]): string {
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += '  set deletedCount to 0\n';
   
   for (const id of ids) {
@@ -373,7 +373,7 @@ export function listProjects(areaId?: string, includeCompleted?: boolean): strin
 use framework "Foundation"
 use scripting additions
 
-tell application "Things3"\n`;
+tell application id "com.culturedcode.ThingsMac"\n`;
   
   // Determine which projects to list
   let projectList = 'projects';
@@ -432,7 +432,7 @@ export function listAreas(): string {
 use framework "Foundation"
 use scripting additions
 
-tell application "Things3"\n`;
+tell application id "com.culturedcode.ThingsMac"\n`;
   script += '  set areaList to areas\n';
   script += '  set resultArray to current application\'s NSMutableArray\'s array()\n';
   script += '  repeat with a in areaList\n';
@@ -472,7 +472,7 @@ use AppleScript version "2.4"
 use framework "Foundation"
 use scripting additions
 
-tell application "Things3"
+tell application id "com.culturedcode.ThingsMac"
   try
     set p to project id "${escapedId}"
     
@@ -553,7 +553,7 @@ export function createProject(
   const escapedName = bridge.escapeString(name);
   const escapedNotes = notes ? bridge.escapeString(notes) : '';
   
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   
   // Create the basic project
   script += `  set newProject to make new project with properties {name:"${escapedName}"`;
@@ -614,7 +614,7 @@ export function updateProject(
 ): string {
   const escapedId = bridge.escapeString(id);
   
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += `  set p to project id "${escapedId}"\n`;
   
   // Update basic properties
@@ -675,7 +675,7 @@ export function completeProject(id: string): string {
   const escapedId = bridge.escapeString(id);
   
   return `
-tell application "Things3"
+tell application id "com.culturedcode.ThingsMac"
   try
     set p to project id "${escapedId}"
     if status of p is open then
@@ -697,7 +697,7 @@ export function createArea(name: string): string {
   const escapedName = bridge.escapeString(name);
   
   return `
-tell application "Things3"
+tell application id "com.culturedcode.ThingsMac"
   set newArea to make new area with properties {name:"${escapedName}"}
   return id of newArea
 end tell`;
@@ -709,7 +709,7 @@ end tell`;
 export function createTag(name: string, parentTagId?: string): string {
   const escapedName = bridge.escapeString(name);
   
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   
   if (parentTagId) {
     const escapedParentId = bridge.escapeString(parentTagId);
@@ -738,7 +738,7 @@ export function createTag(name: string, parentTagId?: string): string {
  * Generate AppleScript to add tags to items (TODOs or Projects)
  */
 export function addTagsToItems(itemIds: string[], tags: string[]): string {
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += '  set updatedCount to 0\n';
   
   // Convert tags to comma-separated string
@@ -782,7 +782,7 @@ export function addTagsToItems(itemIds: string[], tags: string[]): string {
  * Generate AppleScript to remove tags from items
  */
 export function removeTagsFromItems(itemIds: string[], tags: string[]): string {
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += '  set updatedCount to 0\n';
   
   for (const itemId of itemIds) {
@@ -874,7 +874,7 @@ export function removeTagsFromItems(itemIds: string[], tags: string[]): string {
  * Generate AppleScript to delete tags by name
  */
 export function deleteTags(tagNames: string[]): string {
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += '  set deletedCount to 0\n';
   
   for (const tagName of tagNames) {
@@ -900,7 +900,7 @@ export function listTags(): string {
 use framework "Foundation"
 use scripting additions
 
-tell application "Things3"\n`;
+tell application id "com.culturedcode.ThingsMac"\n`;
   script += '  set tagList to tags\n';
   script += '  set resultArray to current application\'s NSMutableArray\'s array()\n';
   script += '  repeat with t in tagList\n';
@@ -942,7 +942,7 @@ export function bulkMoveTodos(
   projectId?: string,
   areaId?: string
 ): string {
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += '  set movedCount to 0\n';
   
   for (const todoId of todoIds) {
@@ -984,7 +984,7 @@ export function bulkUpdateDates(
   whenDate?: string | null,
   deadline?: string | null
 ): string {
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += '  set updatedCount to 0\n';
   
   for (const todoId of todoIds) {
@@ -1035,7 +1035,7 @@ export function searchLogbook(
 use framework "Foundation"
 use scripting additions
 
-tell application "Things3"\n`;
+tell application id "com.culturedcode.ThingsMac"\n`;
   script += '  set logbookItems to to dos of list "Logbook"\n';
   script += '  set resultArray to current application\'s NSMutableArray\'s array()\n';
   script += '  set resultCount to 0\n';
@@ -1098,7 +1098,7 @@ tell application "System Events"
 end tell
 
 if not isRunning then
-  tell application "Things3"
+  tell application id "com.culturedcode.ThingsMac"
     activate
     delay 2 -- Wait for Things3 to fully launch
   end tell
@@ -1111,7 +1111,7 @@ return "running"`;
  * Generate AppleScript to delete areas
  */
 export function deleteAreas(ids: string[]): string {
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += '  set deletedCount to 0\n';
   
   for (const id of ids) {
@@ -1133,7 +1133,7 @@ export function deleteAreas(ids: string[]): string {
  * Generate AppleScript to delete projects
  */
 export function deleteProjects(ids: string[]): string {
-  let script = 'tell application "Things3"\n';
+  let script = 'tell application id "com.culturedcode.ThingsMac"\n';
   script += '  set deletedCount to 0\n';
   
   for (const id of ids) {
@@ -1156,7 +1156,7 @@ export function deleteProjects(ids: string[]): string {
  */
 export function getThings3Version(): string {
   return `
-tell application "Things3"
+tell application id "com.culturedcode.ThingsMac"
   return version
 end tell`;
 }

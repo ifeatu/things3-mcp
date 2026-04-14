@@ -147,16 +147,37 @@ export class AppleScriptBridge {
   }
 
   /**
-   * Launch Things3 if not already running
+   * Launch Things3 if not already running.
+   * Uses bundle ID as primary mechanism for post-reboot reliability (before the
+   * AppleScript name→path cache is populated by the first launch).
+   * Falls back to `open -b` shell command if the bundle-ID AppleScript also fails.
    * @returns True if Things3 was launched or already running
    */
   async ensureThings3Running(): Promise<boolean> {
     const isRunning = await this.isThings3Running();
-    
+
     if (!isRunning) {
+      // Primary: use bundle ID — works reliably after reboot before name cache warms up
       try {
-        await this.execute('tell application "Things3" to activate');
-        // Wait a bit for Things3 to start
+        await this.execute('tell application id "com.culturedcode.ThingsMac" to activate');
+        // Wait for Things3 to fully start
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return true;
+      } catch {
+        // Bundle ID AppleScript failed — fall through to shell fallback
+      }
+
+      // Fallback: launch via `open -b` which always resolves via Launch Services
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const proc = spawn('open', ['-b', 'com.culturedcode.ThingsMac']);
+          proc.on('close', (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`open -b com.culturedcode.ThingsMac exited with code ${code}`));
+          });
+          proc.on('error', reject);
+        });
+        // Wait for Things3 to fully start
         await new Promise(resolve => setTimeout(resolve, 2000));
         return true;
       } catch (error) {
@@ -167,7 +188,7 @@ export class AppleScriptBridge {
         );
       }
     }
-    
+
     return true;
   }
 }
